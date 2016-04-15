@@ -23,20 +23,20 @@ library(knitr)
 ```
 
 ### 1. Download the dataset and import it into R
-```{r}
+```{r,cache=TRUE}
 sonar_data = read.csv("sonar.all-data.csv")
 ```
 
 ### Train a C4.5classifier. Cross-validation
 #### 1. Construct a C4.5 Decision Tree using the entire dataset as the learning set.
-```{r ,cache =TRUE}
+```{r,cache=TRUE}
 Results1 <- data.frame("Algorithm" = "", "Technique" = "", "Accuracy" = 0,
 "Precision" = 0, "Recall" = 0, "F-Score"= 0, stringsAsFactors=FALSE)
 # fit model
 base_model <- train(R~., data=sonar_data, method="J48")
 # summarize the results
 summary(base_model)
-predictions <- predict(base_model, sonar_data[,1:length(sonar_data)])
+predictions <- predict(base_model, sonar_data[,1:length(sonar_data)-1])
 # summarize accuracy
 confusion_matrix <- as.data.frame(table(predictions, sonar_data$R))
 colnames(confusion_matrix) <- c("table.Prediction","table.Reference","table.Freq")
@@ -55,7 +55,7 @@ $$ F-score = 2 *  ((precision * recall) / (precision + recall)) $$
 
 ![Precision - Recall](precision_recall_f-score_1.png) ![Precision - Recall](precision_recall_f-score_2.png)
 
-```{r, cache =TRUE}
+```{r,cache=TRUE}
 accuracy = ((confusion_matrix$table.Freq[1] + confusion_matrix$table.Freq[4]) / sum(confusion_matrix$table.Freq)) * 100
 precision = (confusion_matrix$table.Freq[1] / (confusion_matrix$table.Freq[1] + confusion_matrix$table.Freq[3])) * 100
 recall =  (confusion_matrix$table.Freq[1] / (confusion_matrix$table.Freq[1] + confusion_matrix$table.Freq[2])) * 100
@@ -65,7 +65,7 @@ Results1 <- rbind(Results1,setNames(as.list(c("J48","base_model",accuracy,precis
 
 ### 2. Test C4.5 classifier using a 10-fold cross-validation
 
-```{r, warning=FALSE, cache =TRUE}
+```{r, warning=FALSE,cache=TRUE}
 k_fold_cross_validation_model <-  J48(R ~ ., sonar_data)
 k_fold_cross_validation_model <- evaluate_Weka_classifier(k_fold_cross_validation_model, numFolds = 10)
 confusion_matrix <- k_fold_cross_validation_model$confusionMatrix
@@ -86,7 +86,7 @@ Results1 <- Results1[order(as.numeric(Results1$Accuracy), decreasing = TRUE),]
 
 #### Comparision between Base Model & K Fold Cross Validation Model
 
-```{r}
+```{r,cache=TRUE}
 kable(Results1)
 ```   
 
@@ -96,7 +96,7 @@ The Results show that the base model is way better than the k fold validation mo
 
 ##### Viewing all possible algorithms to be used
 
-```{r}
+```{r,cache=TRUE}
 names(getModelInfo())
 ```
 
@@ -109,7 +109,7 @@ names(getModelInfo())
 
 ### Splitting the Dataset into training set (85%) and test set (15%) 
 
-```{r, cache =FALSE}
+```{r, cache=TRUE}
 # define an 85%/15% train/test split of the dataset
 split=0.85
 trainIndex <- createDataPartition(sonar_data$R, p=split, list=FALSE)
@@ -124,12 +124,12 @@ Results2 <- data.frame("Algorithm" = "", "Technique" = "", "Accuracy" = 0,
 
 This is the C4.5 base model but this time it is trained on 85% of the dataset and tested on the other 15%, this will be compared to C4.5 with 10-fold cross-validation against other classifiers in addition to applying boosting and bagging.
 
-```{r, cache = FALSE}
+```{r, cache=TRUE}
 base_model <- J48(R~., data=train_set)
 # summarize the results
 summary(base_model)
 # make predictions
-predictions <- predict(base_model, test_set[,1:length(test_set-1)])
+predictions <- predict(base_model, test_set[,1:length(test_set)-1])
 # summarize accuracy
 confusion_matrix <- as.data.frame(table(predictions, test_set$R))
 colnames(confusion_matrix) <- c("table.Prediction","table.Reference","table.Freq")
@@ -157,7 +157,7 @@ Results2 <- rbind(Results2,setNames(as.list(c("J48","k_fold_cross_validation_mod
 
 ### Training the 10-cross validation C4.5 model and training with the other algorithms as well and also applying bagging and boosting.
 
-```{r, warning=FALSE, results='hide', cache =FALSE}
+```{r, warning=FALSE, results='hide', cache=TRUE}
 #the algorithms that will be used
 algorithms <- c("rf","svmLinear","nb","nnet")
 
@@ -184,7 +184,7 @@ for(i in algorithms) {
 
 ### Applying Bagging Technique
 
-```{r, warning=FALSE, results='hide', cache =FALSE}
+```{r, warning=FALSE, results='hide', cache=TRUE}
 # For Bagging
 # fit model
 fit <- bagging(R~., data=train_set)
@@ -209,17 +209,17 @@ confusion <- function(a, b){
 
 ## Applying Boosting Technique
 
-```{r, warning=FALSE, results='hide' , cache =FALSE}
+```{r, warning=FALSE, results='hide', cache=TRUE}
 # For Boosting
 fit <- rpart(as.factor(R) ~ ., train_set, control=rpart.control(cp=.01))
 ```
 
 ### Classification Tree
-```{r}
+```{r, cache=TRUE}
 fancyRpartPlot(fit)
 ```
 
-```{r, warning=FALSE, results='hide', cache =FALSE}
+```{r, warning=FALSE, results='hide', cache=TRUE}
 confusion_matrix <- as.data.frame(confusion(predict(fit, test_set, type="class"), as.factor(test_set$R))$table)
 colnames(confusion_matrix) <- c("table.Prediction","table.Reference","table.Freq")
 accuracy = ((confusion_matrix$table.Freq[1] + confusion_matrix$table.Freq[4]) / sum(confusion_matrix$table.Freq)) * 100
@@ -231,17 +231,17 @@ Results2 = Results2[-1,]
 Results2 <- Results2[order(as.numeric(Results2$Accuracy), decreasing = TRUE),]
 ```
 
-```{r}
+```{r, cache=TRUE}
 kable(Results2)
 ```
 
-The results show that k fold cross validation and the base model are now closer when the data is split which proves that in the previous test, the base model performs better because it is overfitted, the k fold cross validation is better on unknown sets.The results shows as well that using bagging is better than the C4 base model which proves it is a good technique to be used. For the comparison between the classifiers themselves,there are classifers with higher accuracy than other. The question is "Does that prove that they are better than the others or is it coincidence?". To answer this question, these classifiers will be tested on other datasets to see if they will perform differently. The performance of the classifier may rely on the nature or structure of the data itself.
+The results show that k fold cross validation and the base model are now closer to each other when the data is split which proves that in the previous test, the base model performs better because it is overfitted, the k fold cross validation is better on unknown sets.The results shows as well that using bagging is better than the C4 base model which proves it is  a good technique to be used. For the comparison between the classifiers themselves,there are classifers with higher accuracy than other. The question is "Does that prove that they are better than the others or is it coincidence?". To answer this question, these classifiers will be tested on other datasets to see if they will perform differently. The performance of the classifier may rely on the nature or structure of the data itself.
 
 ### 4. Test multiple algorithms on multiple datasets. Statistically significant results
 
 First for each dataset, the mean of the column is assigned to cells with missing values. the column containing the label for each dataset is renamed to Target so that a script would run on all datasets and trains each one with the chosen algorithms. 85% of the data is for the training and kfold validation to tune the trained model. The remaining 15% will be test dataset on the trained/tuned model.
 
-```{r, warning=FALSE,results='hide', cache=TRUE}
+```{r, warning=FALSE,results='hide',cache=TRUE}
 # Creating the Table containing all Results
 Results3 <- data.frame("DataSetName" = "", "Algorithm" = "", "Technique" = 0, "Accuracy" = 0,
 "Precision" = 0, "Recall" = 0, "F-Score"= 0, stringsAsFactors=FALSE)
@@ -304,14 +304,14 @@ Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$Accuracy), 
 Results3$DataSetName[Results3$DataSetName == "SPECT.train"] <- "SPECT"
 ```
 
-```{r}
+```{r,cache=TRUE}
 kable(Results3)
 ```
 
 ## Conclusion
 
 ### Which Algorithm which performed statistically significantly better overall(has the most wins)?
-From the results, the most wins is for Random Forest as it somehow keeps its accuracy on the different datasets, unlike other classifiers which performs well on a dataset and bad in another one, for example the Support Vector Machines (Linear) has the highest performance in "pima-indians-diabetes.data" dataset while its accuracy is really bad in "SPECT" dataset
+From the results, the most wins is for Random Forests as it somehow keeps its accuracy on the different datasets, unlike other classifiers which performs well on a dataset and bad in another one, for example the Support Vector Machines (Linear) has the highest performance in "pima-indians-diabetes.data" dataset while its accuracy is really bad in "SPECT" dataset
 
 ### Is there a clear and only winner?
 From the above results, it is clear there no classifer that is performing very well on all datasets, the performance of the classifier depends on the dataset itself. Each algorithm performs well on specific kind of datasets so analysing the dataset before deciding which algorithm to use is very important
@@ -319,19 +319,19 @@ From the above results, it is clear there no classifer that is performing very w
 ### The analysis on multiple measures(precision, recall,f-score).
 
 #### Order of Classifer based on Precision
-```{r}
+```{r,cache=TRUE}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$Precision), decreasing = TRUE),]
 kable(Results3)
 ```
 
 #### Order of Classifer based on Recall
-```{r}
+```{r,cache=TRUE}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$Recall), decreasing = TRUE),]
 kable(Results3)
 ```
 
 #### Order of Classifer based on Fscore
-```{r}
+```{r,cache=TRUE}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$F.Score), decreasing = TRUE),]
 kable(Results3)
 ```
@@ -339,14 +339,19 @@ kable(Results3)
 ## Further Observations
 
 ### Sonar Dataset
-RandomForest is better in every metric except recall in which Neural Networks is better.
+RandomForest is dominating all other classifiers in this dataset in every metric (accuracy, precision, recall and fscore).
 
 ### Hepatitis
-Naive Bayes is dominating all other classifiers apart from Precision in which SVM is a little better.
+Naive Bayes is dominating all other classifiers in this dataset in every metric (accuracy, precision, recall and fscore).
 
 ### Pima Indians
-Naive Bayes & SVM are in great competetion as Naive Bayes is better in terms of accuracy and precision while 
-SVM has better results in recall and fscore but overall both classifers are equally the same.
+Support Vector Machines performed very well in this dataset as it has the highest values in all metrics apart from Recall in which Decision Trees has better value.
 
 ### SPECT
-Same like with Sonar Data set, RandomForest is better in every metric except recall in which Naive Bayes is better.
+Decision Trees performed very well in this dataset as it has the highest values in all metrics apart from Recall in which Naive Bayes has better value.
+
+#### Notes:
+The datasets played an important role in the behaviour of the classifiers and influence their performance. For example, The Decision Trees performed very well in the "SPECT" dataset while it had very bad results with "pima-indians-diabetes.data" and  "hepatitis.data" datasets. 
+
+### IMPORTANT!!
+Some of these observations changes through every training of the classifiers and some doesn't, for example, the random forests having the best results over the entire datasets does not change but for example for a particular dataset, the classifier may perform differently depending on the spliting of the data at the start of our analysis and the random intializations as well.  
