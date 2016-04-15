@@ -239,6 +239,8 @@ The results show that k fold cross validation and the base model are now closer 
 
 ### 4. Test multiple algorithms on multiple datasets. Statistically significant results
 
+First for each dataset, the mean of the column is assigned to cells with missing values. the column containing the label for each dataset is renamed to Target so that a script would run on all datasets and trains each one with the chosen algorithms. 85% of the data is for the training and kfold validation to tune the trained model. The remaining 15% will be test dataset on the trained/tuned model.
+
 ```{r, warning=FALSE,results='hide', cache=TRUE}
 # Creating the Table containing all Results
 Results3 <- data.frame("DataSetName" = "", "Algorithm" = "", "Technique" = 0, "Accuracy" = 0,
@@ -309,21 +311,32 @@ kable(Results3)
 ## Conclusion
 
 ### Which Algorithm which performed statistically significantly better overall(has the most wins)?
-From the results, the most wins is for Random Forest as it somehow keeps its accuracy on the different datasets, unlike other classifiers which performs well on a dataset and bad in another one, for example the Support Vector Machines (Linear) has the highest performance in "pima-indians-diabetes.data" dataset while its accuracy is really bad in "sonar.all-data" dataset
+From the results, the most wins is for Random Forest as it somehow keeps its accuracy on the different datasets, unlike other classifiers which performs well on a dataset and bad in another one, for example the Support Vector Machines (Linear) has the highest performance in "pima-indians-diabetes.data" dataset while its accuracy is really bad in "SPECT" dataset
 
 ### Is there a clear and only winner?
 From the above results, it is clear there no classifer that is performing very well on all datasets, the performance of the classifier depends on the dataset itself. Each algorithm performs well on specific kind of datasets so analysing the dataset before deciding which algorithm to use is very important
 
 ### The analysis on multiple measures(precision, recall,f-score).
 
+#### Order of Classifer based on Precision
 ```{r}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$Precision), decreasing = TRUE),]
 kable(Results3)
+```
+
+#### Order of Classifer based on Recall
+```{r}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$Recall), decreasing = TRUE),]
 kable(Results3)
+```
+
+#### Order of Classifer based on Fscore
+```{r}
 Results3 <- Results3[order(Results3$DataSetName, as.numeric(Results3$F.Score), decreasing = TRUE),]
 kable(Results3)
 ```
+
+## Further Observations
 
 ### Sonar Dataset
 RandomForest is better in every metric except recall in which Neural Networks is better.
